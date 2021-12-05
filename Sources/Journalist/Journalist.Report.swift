@@ -17,14 +17,14 @@ extension Journalist {
 			self.note = note
 		}
 		
-		func log() {
+		func print() {
 			if let note = note {
-				print("Error \(note): \(error.localizedDescription)")
+				Swift.print("Error \(note): \(error.localizedDescription)")
 			} else {
-				print("Error: \(error.localizedDescription)", separator: "")
+				Swift.print("Error: \(error.localizedDescription)", separator: "")
 			}
 			
-			print(error)
+			Swift.print(error)
 		}
 	}
 }
