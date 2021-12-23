@@ -17,6 +17,20 @@ public func report(_ file: @autoclosure () -> String = #file, _ line: @autoclosu
 	Task { await Journalist.instance.report(file, line, function, level, note, closure) }
 }
 
+public func report<Result>(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, note: @autoclosure @escaping () -> String, _ closure: @escaping () throws -> Result) -> Result? {
+
+	do {
+		return try closure()
+	} catch {
+		let line = line()
+		let function = function()
+		let file = file()
+
+		Task { await Journalist.instance.report(file, line, function, level, error: error, note()) }
+		return nil
+	}
+}
+
 public func report<Result>(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, note: @autoclosure @escaping () -> String, _ closure: @escaping () async throws -> Result) async -> Result? {
 	await Journalist.instance.report(file(), line(), function(), level, note, closure)
 }
