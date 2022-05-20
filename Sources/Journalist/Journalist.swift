@@ -10,14 +10,14 @@ public struct UnreportedError: Error {
 	public init() { }
 }
 
-public func report(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, note: @autoclosure @escaping () -> String, _ closure: @escaping () async throws -> Void) {
+public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: @escaping () async throws -> Void) {
 	let line = line()
 	let function = function()
 	let file = file()
-	Task { await Journalist.instance.report(file, line, function, level, note, closure) }
+    Task { await Journalist.instance.report(file: file, line: line, function: function, level: level, note(), closure) }
 }
 
-public func report<Result>(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, note: @autoclosure @escaping () -> String, _ closure: @escaping () throws -> Result) -> Result? {
+public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: @escaping () throws -> Result) -> Result? {
 
 	do {
 		return try closure()
@@ -26,24 +26,24 @@ public func report<Result>(_ file: @autoclosure () -> String = #file, _ line: @a
 		let function = function()
 		let file = file()
 
-		Task { await Journalist.instance.report(file, line, function, level, error: error, note()) }
+		Task { await Journalist.instance.report(file: file, line: line, function: function, level: level, error: error, note()) }
 		return nil
 	}
 }
 
-public func report<Result>(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, note: @autoclosure @escaping () -> String, _ closure: @escaping () async throws -> Result) async -> Result? {
-	await Journalist.instance.report(file(), line(), function(), level, note, closure)
+public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: @escaping () async throws -> Result) async -> Result? {
+	await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, note(), closure)
 }
 
-public func report(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Void) {
+public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Void) {
 	let line = line()
 	let function = function()
 	let file = file()
-	Task { await Journalist.instance.report(file, line, function, level, { "" }, closure) }
+	Task { await Journalist.instance.report(file: file, line: line, function: function, level: level, { "" }(), closure) }
 }
 
-public func report<Result>(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Result) async -> Result? {
-	await Journalist.instance.report(file(), line(), function(), level, { "" }, closure)
+public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Result) async -> Result? {
+    await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, { "" }(), closure)
 }
 
 public actor Journalist {
@@ -58,7 +58,7 @@ public actor Journalist {
         self.additionalReporter = reporter
     }
     
-	public func report(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, error: Error, _ note: String? = nil) {
+	public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, error: Error, _ note: String? = nil) {
 		if error is UnreportedError { return }
 		let report = Report(file: file(), line: line(), function: function(), error: error, note: note)
         additionalReporter?(report)
@@ -71,19 +71,19 @@ public actor Journalist {
 		if printReports { report.print() }
 	}
 	
-	public func report(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, _ note: @escaping () -> String, _ closure: () async throws -> Void) async {
+	public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: () async throws -> Void) async {
 		do {
 			try await closure()
 		} catch {
-			report(file(), line(), function(), error: error, note())
+			report(file: file(), line: line(), function: function(), error: error, note())
 		}
 	}
 	
-	public func report<Result>(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, _ note: @escaping () -> String, _ closure: () async throws -> Result) async -> Result? {
+	public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: () async throws -> Result) async -> Result? {
 		do {
 			return try await closure()
 		} catch {
-			report(file(), line(), function(), error: error, note())
+			report(file: file(), line: line(), function: function(), error: error, note())
 			return nil
 		}
 	}
