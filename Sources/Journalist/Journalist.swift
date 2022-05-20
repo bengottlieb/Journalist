@@ -50,12 +50,18 @@ public actor Journalist {
 	public static let instance = Journalist()
 	public var maxReportsTracked: UInt? = 100
 	public var printReports = true
+    var additionalReporter: ((Report) -> Void)?
 	
 	var reports: [Report] = []
 
+    public func setAdditionalReporter(_ reporter: ((Report) -> Void)?) {
+        self.additionalReporter = reporter
+    }
+    
 	public func report(_ file: @autoclosure () -> String = #file, _ line: @autoclosure () -> Int = #line, _ function: @autoclosure () -> String = #function, _ level: Journalist.Level = .loggedDev, error: Error, _ note: String? = nil) {
 		if error is UnreportedError { return }
 		let report = Report(file: file(), line: line(), function: function(), error: error, note: note)
+        additionalReporter?(report)
 		reports.append(report)
 		if let max = maxReportsTracked {
 			while max < reports.count {

@@ -8,13 +8,15 @@
 import Foundation
 
 extension Journalist {
-	struct Report {
-		let error: Error
-		let note: String?
-		let file: URL?
-		let line: Int
-		let function: String
+	public struct Report {
+        public let error: Error
+        public let note: String?
+        public let file: URL?
+        public let line: Int
+        public let function: String
 
+        public var title: String { note ?? fileLineAndFunction }
+        
 		init(file: String, line: Int, function: String, error: Error, note: String?) {
 			self.error = error
 			self.note = note
@@ -32,6 +34,7 @@ extension Journalist {
 				return ""
 			}
 		}
+        
 		
 		func print() {
 			if let note = note {
