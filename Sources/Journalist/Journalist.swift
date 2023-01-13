@@ -35,11 +35,15 @@ public func report<Result>(file: @autoclosure () -> String = #file, line: @autoc
 	await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, note(), closure)
 }
 
-public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Void) {
+public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () throws -> Void) {
 	let line = line()
 	let function = function()
 	let file = file()
-	Task { await Journalist.instance.report(file: file, line: line, function: function, level: level, { "" }(), closure) }
+	do {
+		try closure()
+	} catch {
+		Task { await Journalist.instance.report(file: file, line: line, function: function, level: level, error: error, "") }
+	}
 }
 
 public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Result) async -> Result? {
@@ -74,6 +78,14 @@ public actor Journalist {
 	public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: () async throws -> Void) async {
 		do {
 			try await closure()
+		} catch {
+			report(file: file(), line: line(), function: function(), error: error, note())
+		}
+	}
+	
+	public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: () throws -> Void) {
+		do {
+			try closure()
 		} catch {
 			report(file: file(), line: line(), function: function(), error: error, note())
 		}
