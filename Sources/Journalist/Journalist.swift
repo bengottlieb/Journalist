@@ -47,7 +47,17 @@ public func report(file: @autoclosure () -> String = #file, line: @autoclosure (
 }
 
 public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Result) async -> Result? {
-    await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, { "" }(), closure)
+	 await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, { "" }(), closure)
+}
+
+public func asyncReport<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Result) {
+	let line = line()
+	let function = function()
+	let file = file()
+
+	Task {
+		await Journalist.instance.report(file: file, line: line, function: function, level: level, { "" }(), closure)
+	}
 }
 
 public actor Journalist {
