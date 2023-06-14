@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import OSLog
 
 public struct UnreportedError: Error {
 	public init() { }
@@ -64,7 +65,9 @@ public actor Journalist {
 	public static let instance = Journalist()
 	public var maxReportsTracked: UInt? = 100
 	public var printReports = true
-    var additionalReporter: ((Report) -> Void)?
+	public var logger = Logger(subsystem: "journalist", category: "reports")
+	
+	var additionalReporter: ((Report) -> Void)?
 	
 	var reports: [Report] = []
 
@@ -74,7 +77,7 @@ public actor Journalist {
     
 	public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, error: Error, _ note: String? = nil) {
 		if error is UnreportedError { return }
-		let report = Report(file: file(), line: line(), function: function(), error: error, note: note)
+		let report = Report(file: file(), line: line(), function: function(), error: error, note: note, logger: logger)
         additionalReporter?(report)
 		reports.append(report)
 		if let max = maxReportsTracked {

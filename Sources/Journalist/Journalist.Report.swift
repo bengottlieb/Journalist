@@ -6,23 +6,26 @@
 //
 
 import Foundation
+import OSLog
 
 extension Journalist {
 	public struct Report {
-        public let error: Error
-        public let note: String?
-        public let file: URL?
-        public let line: Int
-        public let function: String
-
-        public var title: String { note ?? fileLineAndFunction }
-        
-		init(file: String, line: Int, function: String, error: Error, note: String?) {
+		public let error: Error
+		public let note: String?
+		public let file: URL?
+		public let line: Int
+		public let function: String
+		let logger: Logger
+		
+		public var title: String { note ?? fileLineAndFunction }
+		
+		init(file: String, line: Int, function: String, error: Error, note: String?, logger: Logger) {
 			self.error = error
 			self.note = note
 			self.file = URL(fileURLWithPath: file)
 			self.line = line
 			self.function = function
+			self.logger = logger
 		}
 		
 		var fileLineAndFunction: String {
@@ -34,16 +37,17 @@ extension Journalist {
 				return ""
 			}
 		}
-        
+		
 		
 		func print() {
+			let message: String
 			if let note = note {
-				Swift.print("[\(fileLineAndFunction)]: Error \(note): \(error.localizedDescription)")
+				message = "[\(fileLineAndFunction)]: Error \(note): \(error.localizedDescription)"
 			} else {
-				Swift.print("\(fileLineAndFunction): Error: \(error.localizedDescription)", separator: "")
+				message = "\(fileLineAndFunction): Error: \(error.localizedDescription)"
 			}
 			
-			Swift.print(error)
+			logger.info("\(message): \(error)")
 		}
 	}
 }
