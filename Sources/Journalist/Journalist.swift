@@ -33,7 +33,7 @@ public func report<Result>(file: @autoclosure () -> String = #file, line: @autoc
 }
 
 public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: @escaping () async throws -> Result) async -> Result? {
-	try? await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, note(), closure)
+	await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, note(), closure)
 }
 
 public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () throws -> Void) {
@@ -47,8 +47,12 @@ public func report(file: @autoclosure () -> String = #file, line: @autoclosure (
 	}
 }
 
-public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Result) async throws -> Result {
-	 try await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, { "" }(), closure)
+public func reportAndThrow<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Result) async throws -> Result {
+	 try await Journalist.instance.reportAndThrow(file: file(), line: line(), function: function(), level: level, { "" }(), closure)
+}
+
+public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () async throws -> Result) async -> Result? {
+	 await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, { "" }(), closure)
 }
 
 public func asyncReport<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, priority: TaskPriority? = nil, _ closure: @escaping () async throws -> Result) {
@@ -58,11 +62,11 @@ public func asyncReport<Result>(file: @autoclosure () -> String = #file, line: @
 
 	if let priority {
 		Task.detached(priority: priority) {
-			try? await Journalist.instance.report(file: file, line: line, function: function, level: level, { "" }(), closure)
+			await Journalist.instance.report(file: file, line: line, function: function, level: level, { "" }(), closure)
 		}
 	} else {
 		Task {
-			try? await Journalist.instance.report(file: file, line: line, function: function, level: level, { "" }(), closure)
+			await Journalist.instance.report(file: file, line: line, function: function, level: level, { "" }(), closure)
 		}
 	}
 }
@@ -76,15 +80,15 @@ public actor Journalist {
 	var additionalReporter: ((Report) -> Void)?
 	
 	var reports: [Report] = []
-
-    public func setAdditionalReporter(_ reporter: ((Report) -> Void)?) {
-        self.additionalReporter = reporter
-    }
-    
+	
+	public func setAdditionalReporter(_ reporter: ((Report) -> Void)?) {
+		self.additionalReporter = reporter
+	}
+	
 	public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, error: Error, _ note: String? = nil) {
 		if error is UnreportedError { return }
 		let report = Report(file: file(), line: line(), function: function(), error: error, note: note, logger: logger)
-        additionalReporter?(report)
+		additionalReporter?(report)
 		reports.append(report)
 		if let max = maxReportsTracked {
 			while max < reports.count {
@@ -110,12 +114,21 @@ public actor Journalist {
 		}
 	}
 	
-	public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: () async throws -> Result) async throws -> Result {
+	public func reportAndThrow<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: () async throws -> Result) async throws -> Result {
 		do {
 			return try await closure()
 		} catch {
 			report(file: file(), line: line(), function: function(), error: error, note())
 			throw error
+		}
+	}
+	
+	public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ note: @autoclosure @escaping () -> String, _ closure: () async throws -> Result) async -> Result? {
+		do {
+			return try await closure()
+		} catch {
+			report(file: file(), line: line(), function: function(), error: error, note())
+			return nil
 		}
 	}
 }
