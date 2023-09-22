@@ -47,6 +47,7 @@ extension Journalist {
 				message = "\(fileLineAndFunction): Error: \(error.localizedDescription)"
 			}
 			
+			Swift.print(message, error)
 			logger.info("\(message): \(error)")
 		}
 	}
