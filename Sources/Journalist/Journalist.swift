@@ -36,14 +36,15 @@ public func report<Result>(file: @autoclosure () -> String = #file, line: @autoc
 	await Journalist.instance.report(file: file(), line: line(), function: function(), level: level, note(), closure)
 }
 
-public func report(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () throws -> Void) {
+@discardableResult public func report<Result>(file: @autoclosure () -> String = #file, line: @autoclosure () -> Int = #line, function: @autoclosure () -> String = #function, level: Journalist.Level = .loggedDev, _ closure: @escaping () throws -> Result) -> Result? {
 	let line = line()
 	let function = function()
 	let file = file()
 	do {
-		try closure()
+		return try closure()
 	} catch {
 		Task { await Journalist.instance.report(file: file, line: line, function: function, level: level, error: error, "") }
+		return nil
 	}
 }
 
